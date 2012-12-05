@@ -1,0 +1,9 @@
+# Ignored folders
+bin/
+obj/
+
+# Ignored files
+*.suo
+*.user
+*.vssscc
+*.vspscc
