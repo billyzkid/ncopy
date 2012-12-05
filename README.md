@@ -3,7 +3,7 @@
 
 Like copy and xcopy, ncopy is yet another Windows command line copy utility that can copy files and directory trees.
 
-Even better, ncopy can concatenate multiple files into a single encoded file without including the extra byte order marks (BOM) that can invalid your concatenated file.
+Even better, ncopy can concatenate multiple files into a single encoded file without including the extra byte order marks (BOM) that can invalidate your concatenated file.
 
 Examples
 --------
