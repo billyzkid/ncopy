@@ -43,14 +43,16 @@ namespace ncopy
 					{
 						int count = 0;
 
-						if (string.IsNullOrWhiteSpace(source))
-							source = string.Empty;
-						if (string.IsNullOrWhiteSpace(destination))
+						if (String.IsNullOrWhiteSpace(source))
+							source = String.Empty;
+
+						if (String.IsNullOrWhiteSpace(destination))
 							destination = Directory.GetCurrentDirectory();
+
 						if (Directory.Exists(source))
-							CopyDirectory(source, destination, true, true, ref count);
+							CopyDirectory(source, destination, true, false, true, ref count);
 						else if (File.Exists(source))
-							CopyFile(source, destination, true, ref count);
+							CopyFile(source, destination, true, true, ref count);
 						else if (source.Split('+').All(file => File.Exists(file)))
 							ConcatFiles(source.Split('+'), destination, encoding, true, ref count);
 
@@ -72,33 +74,54 @@ namespace ncopy
 			}
 		}
 
-		private static void CopyDirectory(string source, string destination, bool overwrite, bool copySubDirectories, ref int count)
+		private static void CopyDirectory(string source, string destination, bool overwrite, bool copyEmptyDirectories, bool copySubDirectories, ref int count)
 		{
 			DirectoryInfo sourceDirectory = new DirectoryInfo(source);
-			DirectoryInfo destinationDirectory = new DirectoryInfo(destination);
 
-			if (!destinationDirectory.Exists)
-				destinationDirectory.Create();
+			if (!copyEmptyDirectories && !sourceDirectory.EnumerateFileSystemInfos().Any())
+				return;
 
 			foreach (FileInfo fileInfo in sourceDirectory.GetFiles())
-				CopyFile(fileInfo.FullName, Path.Combine(destination, fileInfo.Name), overwrite, ref count);
+				CopyFile(fileInfo.FullName, Path.Combine(destination, fileInfo.Name), overwrite, true, ref count);
 			
 			if (!copySubDirectories)
 				return;
 
-			foreach (DirectoryInfo directoryInfo3 in sourceDirectory.GetDirectories())
-				CopyDirectory(directoryInfo3.FullName, Path.Combine(destination, directoryInfo3.Name), overwrite, copySubDirectories, ref count);
+			foreach (DirectoryInfo directoryInfo in sourceDirectory.GetDirectories())
+				CopyDirectory(directoryInfo.FullName, Path.Combine(destination, directoryInfo.Name), overwrite, copyEmptyDirectories, copySubDirectories, ref count);
 		}
 
-		private static void CopyFile(string source, string destination, bool overwrite, ref int count)
+		private static void CopyFile(string source, string destination, bool overwrite, bool createMissingDirectories, ref int count)
 		{
 			FileInfo sourceFile = new FileInfo(source);
-			DirectoryInfo destinationDirectory = new DirectoryInfo(destination);
 
-			if (destinationDirectory.Exists)
-				destination = Path.Combine(destination, sourceFile.Name);
+			//Console.WriteLine("Destination: " + destination);
+			//Console.WriteLine("Directory Name: " + Path.GetDirectoryName(destination));
+			//Console.WriteLine("File Name: " + Path.GetFileName(destination));
+			//Console.WriteLine("Extension: " + Path.GetExtension(destination));
 
-			sourceFile.CopyTo(destination, overwrite);
+			if (String.IsNullOrWhiteSpace(Path.GetExtension(destination)))
+			{
+				// destination is a directory
+				DirectoryInfo destinationDirectory = new DirectoryInfo(destination);
+
+				if (createMissingDirectories && !destinationDirectory.Exists)
+					destinationDirectory.Create();
+
+				string destinationFileName = Path.Combine(destinationDirectory.FullName, sourceFile.Name);
+				sourceFile.CopyTo(destinationFileName, overwrite);
+			}
+			else
+			{
+				// destination is a file
+				FileInfo destinationFile = new FileInfo(destination);
+
+				if (createMissingDirectories && !destinationFile.Directory.Exists)
+					destinationFile.Directory.Create();
+
+				string destinationFileName = destinationFile.FullName;
+				sourceFile.CopyTo(destinationFileName, overwrite);
+			}
 
 			Console.WriteLine(sourceFile.FullName);
 			++count;
