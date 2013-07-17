@@ -49,12 +49,20 @@ namespace ncopy
 						if (String.IsNullOrWhiteSpace(destination))
 							destination = Directory.GetCurrentDirectory();
 
-						if (Directory.Exists(source))
-							CopyDirectory(source, destination, true, false, true, ref count);
-						else if (File.Exists(source))
-							CopyFile(source, destination, true, true, ref count);
-						else if (source.Split('+').All(file => File.Exists(file)))
-							ConcatFiles(source.Split('+'), destination, encoding, true, ref count);
+						string[] sources = source.Split(new char[] { '+' }, StringSplitOptions.RemoveEmptyEntries);
+
+						if (sources.Length > 1 && sources.All(file => File.Exists(file)))
+						{
+							if (sources.All(file => File.Exists(file)))
+								ConcatFiles(sources, destination, encoding, true, ref count);
+						}
+						else
+						{
+							if (Directory.Exists(source))
+								CopyDirectory(source, destination, true, false, true, ref count);
+							else if (File.Exists(source))
+								CopyFile(source, destination, true, true, ref count);
+						}
 
 						Console.WriteLine("{0} File(s) copied", count);
 						Environment.Exit(0);
